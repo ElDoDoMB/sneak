@@ -23,6 +23,7 @@ namespace ConsoleGameSneak
         public const char Food = '*';
         public const char XWall = '-';
         public const char YWall = '|';
+        public const char Plus = '+';
     }
 
 
@@ -44,14 +45,12 @@ namespace ConsoleGameSneak
                 var list = new List<char>(XMax);
                 for (int X = 0; X < XMax; X++)
                 {
-                    if ((X < 2 && Y < 2) || (X > XMax - 3 && Y > YMax - 3))
+                    if ((X == 0 || X == XMax - 1) && (Y == 0 || Y == YMax - 1))
                     {
-                        list.Add(S.YWall);
-                        list.Add(S.YWall);
-                        X++;
+                        list.Add(S.Plus);
                     }
-                    else if (Y < 2 || Y > YMax - 3) list.Add(S.XWall);
-                    else if (X < 2 || X > XMax - 3) list.Add(S.YWall);
+                    else if (Y < 1 || Y > YMax - 2) list.Add(S.XWall);
+                    else if (X < 1 || X > XMax - 2) list.Add(S.YWall);
                     else list.Add(S.Empty);
                 }
                 MaP.Add(list);
@@ -66,36 +65,26 @@ namespace ConsoleGameSneak
         {
             if (MaP[SneaK[0].Y][SneaK[0].X] == S.XWall ||
                 MaP[SneaK[0].Y][SneaK[0].X] == S.YWall ||
-                MaP[SneaK[0].Y][SneaK[0].X] == S.Tail) 
-            {
-                SneaK[0].Y = SneaK[0].YPr;
-                SneaK[0].X = SneaK[0].XPr;
-                SneaK[0].Draw(S.Sneak);
-                return true;
-            }
+                MaP[SneaK[0].Y][SneaK[0].X] == S.Tail)
+            return true;
             else return false;
         }
 
-        public void Draw()
+        private void DrawSneak(char Sneak, char Tail, List<Sneak> SneaKN) 
         {
-            if (isCrash())
-                Program.StopGame();
-            else
-                if (MaP[SneaK[0].Y][SneaK[0].X] == S.Food)
-                {
-                    MaP[SneaK[0].Y][SneaK[0].X] = S.Empty;
-                    FooD.Draw();
-                    SneaK.Add(new Sneak(SneaK[SneaK.Count - 1].XPr, SneaK[SneaK.Count - 1].YPr));
-                }
-
-            for (int i = 1; i < SneaK.Count; i++)
+            for (int i = 1; i < SneaKN.Count; i++)
             {
-                MaP[SneaK[i].YPr][SneaK[i].XPr] = S.Empty;
-                SneaK[i].Draw(S.Tail);
-                SneaK[i].Y = SneaK[i - 1].YPr;
-                SneaK[i].X = SneaK[i - 1].XPr;
+                MaP[SneaKN[i].YPr][SneaKN[i].XPr] = S.Empty;
+                SneaKN[i].Draw(Tail);
+                SneaKN[i].Y = SneaKN[i - 1].YPr;
+                SneaKN[i].X = SneaKN[i - 1].XPr;
             }
-            SneaK[0].Draw(S.Sneak);
+            SneaKN[0].Draw(Sneak);
+            WriteMap();
+        }
+
+        private void WriteMap() 
+        {
             var strBuilder = new StringBuilder(YMax * XMax);
             for (int Y = 0; Y < YMax; Y++)
             {
@@ -105,7 +94,29 @@ namespace ConsoleGameSneak
                 }
                 strBuilder.AppendLine();
             }
+            Console.SetCursorPosition(0, 0);
+            Console.WriteLine();
             Console.Write(strBuilder.ToString());
+        }
+
+        public void Draw()
+        {
+            if (isCrash())
+            {
+                DrawSneak(S.Empty, S.Empty, SneaK);
+                Program.StopGame();
+            }
+            else
+            {
+                if (MaP[SneaK[0].Y][SneaK[0].X] == S.Food)
+                {
+                    MaP[SneaK[0].Y][SneaK[0].X] = S.Empty;
+                    FooD.Draw();
+                    SneaK.Add(new Sneak(SneaK[SneaK.Count - 1].XPr, SneaK[SneaK.Count - 1].YPr));
+                }
+                DrawSneak(S.Sneak, S.Tail, SneaK);
+            }
+
             
         }
     }
@@ -151,7 +162,7 @@ namespace ConsoleGameSneak
                         case Direction.Right: X++; break;
                     }
                 }
-                if(X != XPr || Y != YPr)
+                if (X != XPr || Y != YPr)
                     Map.MaP[YPr][XPr] = S.Empty;
                 Tick = 0;
                 DPrev = Program.D;
@@ -168,8 +179,13 @@ namespace ConsoleGameSneak
 
         public void Draw()
         {
-            X = RanD.Next(2, Map.XMax - 3);
-            Y = RanD.Next(2, Map.YMax - 3);
+            do
+            {
+                X = RanD.Next(1, Map.XMax - 2);
+                Y = RanD.Next(1, Map.YMax - 2);
+            }
+            while (Map.MaP[Y][X] != S.Empty);
+
             Map.MaP[Y][X] = S.Food;
         }
 
@@ -180,13 +196,13 @@ namespace ConsoleGameSneak
         public static bool gameStatus = true;
         public static Map GameMap;
         public static ConsoleKeyInfo KeyInfoN;
-        public static Direction D ;
+        public static Direction D;
 
 
         static void StartGame()
         {
             GameMap = new Map();
-            while (true)
+            while (gameStatus)
             {
                 D = KeyToDirection(KeyInfoN.Key);
                 if (KeyInfoN.Key == ConsoleKey.X) StopGame();
@@ -197,26 +213,29 @@ namespace ConsoleGameSneak
                     Console.SetCursorPosition(0, 1);
                     GameMap.Draw();
                 }
-                while ((!Console.KeyAvailable || isAntiKey()));
+                while ((!Console.KeyAvailable || isAntiKey()) && gameStatus);
 
             }
         }
 
         static void Main()
         {
-
-            InfoGame(GameInfo.Start);
-            Console.ReadKey(true);
-            Console.Clear();
-            StartGame();
+            if (gameStatus)
+            {
+                InfoGame(GameInfo.Start);
+                Console.ReadKey(true);
+                Console.Clear();
+                StartGame();
+            }
         }
 
         public static void StopGame()
         {
             InfoGame(GameInfo.Stop);
             KeyInfoN = Console.ReadKey(true);
-            if (KeyInfoN.Key != ConsoleKey.X)
-                Main();
+            if (KeyInfoN.Key == ConsoleKey.X)
+                gameStatus = false;
+            Main();
         }
 
         enum GameInfo : int
@@ -232,11 +251,11 @@ namespace ConsoleGameSneak
             {
                 case GameInfo.Start:
                     Console.Clear();
-                    Console.SetCursorPosition(1, 1);
+                    Console.SetCursorPosition(0, 1);
                     Console.WriteLine("Press any key to start...");
                     break;
                 case GameInfo.inGame:
-                    Console.SetCursorPosition(1, Map.YMax + 2);
+                    Console.SetCursorPosition(0, Map.YMax + 2);
                     Console.WriteLine("Score - " + Map.SneaK.Count);
                     /*for (int i = 0; i < Map.SneaK.Count; i++)
                     {
@@ -246,11 +265,9 @@ namespace ConsoleGameSneak
                     }*/
                     break;
                 case GameInfo.Stop:
-                    Console.SetCursorPosition(1, Map.MaP.Count + 2);
+                    Console.SetCursorPosition(0, Map.YMax + 2);
                     Console.WriteLine("GAME OVER with score " + Map.SneaK.Count);
-                    Console.SetCursorPosition(1, Map.MaP.Count + 3);
                     Console.WriteLine("Press any key to restart.");
-                    Console.SetCursorPosition(1, Map.MaP.Count + 4);
                     Console.WriteLine("Press X to stop game.");
                     break;
             }
