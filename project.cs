@@ -34,7 +34,6 @@ namespace ConsoleGameSneak
 
 
         public static List<Sneak> SneaK;
-        public static List<Sneak> SneaK2;
         private Food FooD = new Food();
 
         public Map()
@@ -60,8 +59,6 @@ namespace ConsoleGameSneak
             FooD.Draw();
             SneaK = new List<Sneak>();
             SneaK.Add(new Sneak());
-            SneaK2 = new List<Sneak>();
-            SneaK2.Add(new Sneak(20,20));
 
         }
 
@@ -69,15 +66,11 @@ namespace ConsoleGameSneak
         {
             if (MaP[SneaK[0].Y][SneaK[0].X] == S.XWall ||
                 MaP[SneaK[0].Y][SneaK[0].X] == S.YWall ||
-                MaP[SneaK[0].Y][SneaK[0].X] == S.Tail ||
-                MaP[SneaK2[0].Y][SneaK2[0].X] == S.XWall ||
-                MaP[SneaK2[0].Y][SneaK2[0].X] == S.YWall ||
-                MaP[SneaK2[0].Y][SneaK2[0].X] == S.Tail)
+                MaP[SneaK[0].Y][SneaK[0].X] == S.Tail) 
             {
                 SneaK[0].Y = SneaK[0].YPr;
                 SneaK[0].X = SneaK[0].XPr;
-                SneaK2[0].Y = SneaK2[0].YPr;
-                SneaK2[0].X = SneaK2[0].XPr;
+                SneaK[0].Draw(S.Sneak);
                 return true;
             }
             else return false;
@@ -94,29 +87,15 @@ namespace ConsoleGameSneak
                     FooD.Draw();
                     SneaK.Add(new Sneak(SneaK[SneaK.Count - 1].XPr, SneaK[SneaK.Count - 1].YPr));
                 }
-                else if (MaP[SneaK2[0].Y][SneaK2[0].X] == S.Food)
-                {
-                    MaP[SneaK2[0].Y][SneaK2[0].X] = S.Empty;
-                    FooD.Draw();
-                    SneaK2.Add(new Sneak(SneaK2[SneaK2.Count - 1].XPr, SneaK2[SneaK2.Count - 1].YPr));
-                }
 
             for (int i = 1; i < SneaK.Count; i++)
             {
                 MaP[SneaK[i].YPr][SneaK[i].XPr] = S.Empty;
-                SneaK[i].Draw(S.Tail, 1);
+                SneaK[i].Draw(S.Tail);
                 SneaK[i].Y = SneaK[i - 1].YPr;
                 SneaK[i].X = SneaK[i - 1].XPr;
             }
-            SneaK[0].Draw(S.Sneak,1); 
-            for (int i = 1; i < SneaK2.Count; i++)
-            {
-                MaP[SneaK2[i].YPr][SneaK2[i].XPr] = S.Empty;
-                SneaK2[i].Draw(S.Tail, 2);
-                SneaK2[i].Y = SneaK2[i - 1].YPr;
-                SneaK2[i].X = SneaK2[i - 1].XPr;
-            }
-            SneaK2[0].Draw(S.Sneak, 2);
+            SneaK[0].Draw(S.Sneak);
             var strBuilder = new StringBuilder(YMax * XMax);
             for (int Y = 0; Y < YMax; Y++)
             {
@@ -143,24 +122,26 @@ namespace ConsoleGameSneak
         {
             X = Map.MaP[0].Count / 2;
             Y = Map.MaP.Count / 2;
+            Map.MaP[Y][X] = S.Sneak;
         }
 
         public Sneak(int X, int Y)
         {
             this.X = X;
             this.Y = Y;
+            Map.MaP[Y][X] = S.Tail;
         }
 
-        public void Draw(char Ch, int count)
+        public void Draw(char Ch)
         {
             Tick++;
             Map.MaP[Y][X] = Ch;
             if (Tick == MoveSpeed ||
-                Program.D != DPrev || Program.D2 != DPrev)
+                Program.D != DPrev)
             {
                 XPr = X;
                 YPr = Y;
-                if (count == 1)
+                if (Ch == S.Sneak)
                 {
                     switch (Program.D)
                     {
@@ -170,13 +151,6 @@ namespace ConsoleGameSneak
                         case Direction.Right: X++; break;
                     }
                 }
-                else switch (Program.D2)
-                    {
-                        case Direction.Up: Y--; break;
-                        case Direction.Down: Y++; break;
-                        case Direction.Left: X--; break;
-                        case Direction.Right: X++; break;
-                    }
                 if(X != XPr || Y != YPr)
                     Map.MaP[YPr][XPr] = S.Empty;
                 Tick = 0;
@@ -206,7 +180,7 @@ namespace ConsoleGameSneak
         public static bool gameStatus = true;
         public static Map GameMap;
         public static ConsoleKeyInfo KeyInfoN;
-        public static Direction D,D2;
+        public static Direction D ;
 
 
         static void StartGame()
@@ -215,7 +189,6 @@ namespace ConsoleGameSneak
             while (true)
             {
                 D = KeyToDirection(KeyInfoN.Key);
-                D2 = KeyToDirection2(KeyInfoN.Key);
                 if (KeyInfoN.Key == ConsoleKey.X) StopGame();
 
                 do
@@ -224,7 +197,7 @@ namespace ConsoleGameSneak
                     Console.SetCursorPosition(0, 1);
                     GameMap.Draw();
                 }
-                while ((!Console.KeyAvailable || isAntiKey() || isAntiKey2()));
+                while ((!Console.KeyAvailable || isAntiKey()));
 
             }
         }
@@ -289,26 +262,12 @@ namespace ConsoleGameSneak
             KeyInfoN = Console.ReadKey(true);
             DN = KeyToDirection(KeyInfoN.Key);
 
-            if ((int)D == (-1) * (int)DN )
+            if ((int)D == (-1) * (int)DN)
             {
                 return true;
             }
             else return false;
         }
-
-        static bool isAntiKey2()
-        {
-            Direction DN2;
-            KeyInfoN = Console.ReadKey(true);
-            DN2 = KeyToDirection2(KeyInfoN.Key);
-
-            if ((int)D2 == (-1) * (int)DN2)
-            {
-                return true;
-            }
-            else return false;
-        }
-
 
         static Direction KeyToDirection(ConsoleKey Key)
         {
@@ -318,17 +277,6 @@ namespace ConsoleGameSneak
                 case ConsoleKey.S: return Direction.Down;
                 case ConsoleKey.A: return Direction.Left;
                 case ConsoleKey.D: return Direction.Right;
-                default: return D;
-            }
-        }
-        static Direction KeyToDirection2(ConsoleKey Key)
-        {
-            switch (Key)
-            {
-                case ConsoleKey.UpArrow: return Direction.Up;
-                case ConsoleKey.DownArrow: return Direction.Down;
-                case ConsoleKey.LeftArrow: return Direction.Left;
-                case ConsoleKey.RightArrow: return Direction.Right;
                 default: return D;
             }
         }
